@@ -3,1367 +3,726 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>联机五子棋 | 在线对战</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>多人五子棋</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        :root {
-            --primary: #3498db;
-            --secondary: #2c3e50;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --light: #ecf0f1;
-            --dark: #34495e;
-            --board-bg: #f0d9b5;
-            --black-stone: #2c3e50;
-            --white-stone: #ecf0f1;
-        }
-
-        body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
-            min-height: 100vh;
-            padding: 20px;
-            color: white;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 300px 1fr 300px;
-            gap: 20px;
-            height: calc(100vh - 40px);
-        }
-
-        .panel {
-            background: rgba(44, 62, 80, 0.85);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-        }
-
-        .panel-header {
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--primary);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .panel-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-list {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .user-item {
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            background: rgba(52, 73, 94, 0.7);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .user-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            background: rgba(52, 73, 94, 0.9);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .user-name {
-            font-weight: 500;
-        }
-
-        .user-status {
-            font-size: 0.8rem;
-            padding: 3px 8px;
-            border-radius: 20px;
-        }
-
-        .status-idle {
-            background: var(--success);
-            color: white;
-        }
-
-        .status-playing {
-            background: var(--warning);
-            color: white;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn {
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.9rem;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .game-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--primary);
-        }
-
-        .game-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-
-        .game-info {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .info-item {
-            background: rgba(52, 73, 94, 0.7);
-            padding: 8px 15px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .game-board-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            padding: 20px;
-            position: relative;
-        }
-
-        #game-board {
-            background: var(--board-bg);
-            border-radius: 5px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        .game-controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding-top: 20px;
-        }
-
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-        }
-
-        .message {
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            max-width: 80%;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message-self {
-            background: var(--primary);
-            margin-left: auto;
-        }
-
-        .message-other {
-            background: var(--dark);
-            margin-right: auto;
-        }
-
-        .message-system {
-            background: rgba(0, 0, 0, 0.3);
-            text-align: center;
-            font-style: italic;
-            margin: 10px auto;
-            width: 90%;
-            padding: 5px;
-        }
-
-        .message-sender {
-            font-weight: bold;
-            margin-bottom: 3px;
-            font-size: 0.9rem;
-        }
-
-        .message-content {
-            word-wrap: break-word;
-        }
-
-        .chat-input {
-            display: flex;
-            gap: 10px;
-        }
-
-        #chat-input {
-            flex: 1;
-            padding: 12px 15px;
-            border-radius: 30px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            outline: none;
-        }
-
-        #chat-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        #send-message {
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .modal-content {
-            background: var(--secondary);
-            width: 90%;
-            max-width: 500px;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-            transform: translateY(-20px);
-            transition: transform 0.3s ease;
-        }
-
-        .modal.active .modal-content {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .modal-title {
-            font-size: 1.8rem;
-            color: var(--primary);
-            margin-bottom: 10px;
-        }
-
-        .modal-body {
-            margin-bottom: 25px;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 15px;
-            border-radius: 10px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            outline: none;
-        }
-
-        .invite-modal .modal-content {
-            text-align: center;
-        }
-
-        .invite-text {
-            font-size: 1.2rem;
-            margin-bottom: 25px;
-        }
-
-        .inviter-name {
-            color: var(--warning);
-            font-weight: bold;
-        }
-
-        .stone {
-            position: absolute;
-            border-radius: 50%;
-            animation: placeStone 0.3s ease-out;
-        }
-
-        @keyframes placeStone {
-            0% { transform: scale(0); }
-            70% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        .win-line {
-            position: absolute;
-            background: var(--danger);
-            height: 6px;
-            border-radius: 3px;
-            transform-origin: 0 0;
-            animation: drawLine 0.5s ease-out;
-        }
-
-        @keyframes drawLine {
-            from { width: 0; }
-            to { width: 100%; }
-        }
-
-        .player-card {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            min-width: 150px;
-        }
-
-        .player-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 1.1rem;
-        }
-
-        .player-role {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .turn-indicator {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin: 15px 0;
-            text-align: center;
-            height: 30px;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .status-online {
-            background: var(--success);
-        }
-
-        .status-offline {
-            background: var(--danger);
-        }
-
-        @media (max-width: 1200px) {
-            .container {
-                grid-template-columns: 1fr;
-                height: auto;
-                min-height: 100vh;
-            }
-
-            .panel {
-                margin-bottom: 20px;
-            }
-        }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; background-color: #f0f0f0; min-height: 100vh; box-sizing: border-box; }
+        .container { display: flex; gap: 20px; width: 100%; max-width: 1000px; }
+        .sidebar { background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 250px; }
+        .game-area { background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-grow: 1; display: flex; flex-direction: column; align-items: center; }
+        .nickname-section, .game-info, .online-users, .chat-section { margin-bottom: 15px; }
+        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
+        button { padding: 8px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .game-board { width: 450px; height: 450px; background-color: #deb887; border: 2px solid #8b4513; position: relative; margin-top: 15px; }
+        .grid-line { position: absolute; background-color: #8b4513; }
+        .grid-line.horizontal { width: 100%; height: 1px; }
+        .grid-line.vertical { height: 100%; width: 1px; }
+        .intersection { position: absolute; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; }
+        .intersection:hover { background-color: rgba(0,0,0,0.1); }
+        .piece { width: 24px; height: 24px; border-radius: 50%; position: absolute; transform: translate(-50%, -50%); box-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .piece-black { background: radial-gradient(circle at 30% 30%, #555, #000); }
+        .piece-white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
+        .user-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .user-item:last-child { border-bottom: none; }
+        .status { font-size: 0.8em; padding: 3px 6px; border-radius: 3px; color: white; }
+        .status-free { background-color: #28a745; }
+        .status-playing { background-color: #dc3545; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background-color: white; padding: 25px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-buttons { margin-top: 15px; }
+        .modal-buttons button { margin: 0 5px; }
+        #currentTurn { font-weight: bold; margin-bottom: 10px; font-size: 1.1em; }
+        #playersInfo { margin-bottom: 10px; }
+        #gameMessages { min-height: 50px; border: 1px solid #eee; padding: 5px; margin-top: 10px; border-radius: 4px; background: #f9f9f9; }
     </style>
 </head>
 <body>
-    <!-- 登录/昵称设置模态框 -->
-    <div class="modal" id="login-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">欢迎来到联机五子棋</h2>
-                <p>设置您的昵称开始游戏</p>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">请输入您的昵称</label>
-                    <input type="text" id="username" class="form-input" placeholder="例如: 棋圣" maxlength="20">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="save-username">开始游戏</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 邀请模态框 -->
-    <div class="modal invite-modal" id="invite-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">对战邀请</h2>
-            </div>
-            <div class="modal-body">
-                <p class="invite-text"><span class="inviter-name" id="inviter-name">玩家</span> 邀请您进行五子棋对战</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-success" id="accept-invite">接受</button>
-                <button class="btn btn-danger" id="decline-invite">拒绝</button>
-            </div>
-        </div>
+    <div class="nickname-section">
+        <input type="text" id="nicknameInput" placeholder="输入你的昵称">
+        <button onclick="setNickname()">设置/更新昵称</button>
+        <span id="currentNicknameDisplay" style="margin-left: 10px;"></span>
     </div>
 
     <div class="container">
-        <!-- 左侧用户列表 -->
-        <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title">
-                    <i class="fas fa-users"></i>
-                    在线玩家
-                </h2>
-                <div class="user-count">
-                    <span id="online-count">0</span> 人在线
-                </div>
-            </div>
-            <div class="user-list" id="user-list">
-                <!-- 用户列表会动态加载 -->
-            </div>
+        <div class="sidebar">
+            <h3>在线玩家 (<span id="onlineCount">0</span>)</h3>
+            <div id="onlineUsersList" class="online-users"></div>
         </div>
 
-        <!-- 中间游戏区域 -->
-        <div class="panel game-container">
-            <div class="game-header">
-                <h2 class="game-title">联机五子棋</h2>
-                <div class="game-info">
-                    <div class="info-item">
-                        <i class="fas fa-user"></i>
-                        <span id="current-user">游客</span>
-                    </div>
-                    <div class="info-item">
-                        <i class="fas fa-sync-alt"></i>
-                        <span id="connection-status">连接中...</span>
-                    </div>
-                </div>
+        <div class="game-area">
+            <div class="game-info">
+                <div id="playersInfo"></div>
+                <div id="currentTurn">请先设置昵称并加入大厅</div>
+                <button id="leaveGameButton" onclick="leaveGame()" style="display: none; margin-top:10px;">离开游戏</button>
             </div>
-
-            <div class="turn-indicator" id="turn-indicator">
-                请在大厅选择对手开始游戏
-            </div>
-
-            <div class="game-board-container">
-                <canvas id="game-board" width="600" height="600"></canvas>
-                <!-- 玩家信息会动态显示 -->
-            </div>
-
-            <div class="game-controls">
-                <button class="btn btn-warning" id="back-to-lobby">
-                    <i class="fas fa-home"></i> 返回大厅
-                </button>
-                <button class="btn btn-danger" id="resign-btn">
-                    <i class="fas fa-flag"></i> 认输
-                </button>
-            </div>
+            <div class="game-board" id="gameBoard"></div>
+            <div id="gameMessages"></div>
         </div>
+    </div>
 
-        <!-- 右侧聊天区域 -->
-        <div class="panel chat-container">
-            <div class="panel-header">
-                <h2 class="panel-title">
-                    <i class="fas fa-comments"></i>
-                    游戏聊天
-                </h2>
-                <div class="chat-info">
-                    <span id="chat-room">大厅</span>
-                </div>
-            </div>
-            <div class="chat-messages" id="chat-messages">
-                <div class="message message-system">
-                    欢迎来到联机五子棋！请在大厅选择对手开始游戏
-                </div>
-            </div>
-            <div class="chat-input">
-                <input type="text" id="chat-input" placeholder="输入聊天内容...">
-                <button class="btn btn-primary" id="send-message">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+    <!-- 挑战模态框 -->
+    <div id="challengeModal" class="modal">
+        <div class="modal-content">
+            <h3 id="challengeFrom"></h3>
+            <p>向你发起五子棋挑战！</p>
+            <div class="modal-buttons">
+                <button onclick="acceptChallenge()">接受</button>
+                <button onclick="rejectChallenge()" style="background-color: #dc3545;">拒绝</button>
             </div>
         </div>
     </div>
 
-    <script>
-        // Firebase 配置
+    <!-- 游戏结果模态框 -->
+    <div id="gameResultModal" class="modal">
+        <div class="modal-content">
+            <h3 id="gameResultText"></h3>
+            <div class="modal-buttons">
+                <button onclick="closeGameResultModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue, push, remove, onDisconnect, serverTimestamp, update } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+
         const firebaseConfig = {
-            apiKey: "AIzaSyAcXtlPYr36ODkf_a0t5IwBsWUjQCtmZbE",
-            authDomain: "gobang-27d96.firebaseapp.com",
-            databaseURL: "https://gobang-27d96-default-rtdb.firebaseio.com",
-            projectId: "gobang-27d96",
-            storageBucket: "gobang-27d96.firebasestorage.app",
-            messagingSenderId: "574028404402",
-            appId: "1:574028404402:web:aa74f333a5adc41a289bab",
-            measurementId: "G-627W6W10VN"
+            apiKey: "AIzaSyCN2GwB-cfW_9V5p8axsnTiotrAVEoYnbE", // 请替换为你的API Key
+            authDomain: "new-gobang.firebaseapp.com",
+            databaseURL: "https://new-gobang-default-rtdb.firebaseio.com",
+            projectId: "new-gobang",
+            storageBucket: "new-gobang.firebasestorage.app",
+            messagingSenderId: "1011469918436",
+            appId: "1:1011469918436:web:4d09b3d0d5a97b85458cf1",
+            measurementId: "G-1JWF51NZTV"
         };
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
-        // 游戏常量
         const BOARD_SIZE = 15;
-        const CELL_SIZE = 40;
-        const STONE_RADIUS = 18;
-        const BOARD_PADDING = 30;
+        const CELL_SIZE = 30; // 450px / 15
 
-        // 游戏状态
-        let gameState = {
-            userId: null,
-            username: "",
-            status: "idle", // idle, playing, spectating
-            currentGame: null,
-            currentRoom: "lobby",
-            isMyTurn: false,
-            playerColor: null,
-            board: Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(null)),
-            players: {},
-            spectators: []
+        let currentUser = {
+            id: localStorage.getItem('gobangUserId') || `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            nickname: localStorage.getItem('gobangUserNickname') || '',
+            status: 'free', // free, playing, challenging
+            roomId: null,
+            challenging: null // Store the ID of the user being challenged
+        };
+        localStorage.setItem('gobangUserId', currentUser.id);
+
+        let currentRoom = null; // 当前游戏房间的监听器
+        let challengingPlayer = null; // 记录是谁发起的挑战，用于接受挑战时使用
+        let heartBeatInterval = null;
+
+        const nicknameInput = document.getElementById('nicknameInput');
+        const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
+        const onlineUsersList = document.getElementById('onlineUsersList');
+        const onlineCount = document.getElementById('onlineCount');
+        const gameBoard = document.getElementById('gameBoard');
+        const currentTurnDisplay = document.getElementById('currentTurn');
+        const playersInfoDisplay = document.getElementById('playersInfo');
+        const leaveGameButton = document.getElementById('leaveGameButton');
+        const gameMessages = document.getElementById('gameMessages');
+
+        // 在 updateUserPresence 中也更新 challenging 状态
+        // (This comment is already handled by the previous change, adding the function below)
+
+        // 监听自身用户数据的变化，特别是roomId，用于在挑战被接受后自动进入游戏
+        function listenToSelfUserUpdates() {
+            const selfUserRef = ref(database, `users/${currentUser.id}`);
+            onValue(selfUserRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    // 如果状态是 playing 且有 roomId，并且当前不在游戏中或 roomId 不同
+                    if (userData.status === 'playing' && userData.roomId && 
+                        (currentUser.status !== 'playing' || currentUser.roomId !== userData.roomId)) {
+                        
+                        currentUser.status = 'playing';
+                        currentUser.roomId = userData.roomId;
+                        // currentUser.challenging = null; // 进入游戏后，清除挑战对象
+                        // updateUserPresence(); // 状态已在数据库同步
+
+                        // 获取房间信息并开始游戏
+                        get(ref(database, `rooms/${userData.roomId}`)).then(roomSnapshot => {
+                            if (roomSnapshot.exists()) {
+                                gameMessages.innerHTML = `已加入房间 ${userData.roomId}`;
+                                startGame(userData.roomId, roomSnapshot.val());
+                            } else {
+                                console.error("Room not found after challenge accepted: ", userData.roomId);
+                                gameMessages.innerHTML = "错误：未能找到游戏房间。";
+                                resetToLobbyState();
+                            }
+                        });
+                    } else if (userData.status === 'free' && currentUser.status !== 'free') {
+                        // 如果数据库中自己是free，但本地不是，则同步为free (例如游戏结束后)
+                        if (currentUser.roomId) { // 确保是从游戏中返回大厅
+                            resetToLobbyState();
+                        }
+                    }
+                    // 更新本地currentUser的昵称等信息，如果从其他地方修改了
+                    if (userData.nickname && userData.nickname !== currentUser.nickname) {
+                        currentUser.nickname = userData.nickname;
+                        localStorage.setItem('gobangUserNickname', userData.nickname);
+                        currentNicknameDisplay.textContent = `当前昵称: ${userData.nickname}`;
+                    }
+                }
+            });
+        }
+
+        // 初始化
+        window.onload = () => {
+            nicknameInput.value = currentUser.nickname;
+            currentNicknameDisplay.textContent = currentUser.nickname ? `当前昵称: ${currentUser.nickname}` : '未设置昵称';
+            if (currentUser.nickname) {
+                joinLobby();
+                listenToSelfUserUpdates(); // 新增：监听自身用户状态变化
+            }
+            createBoardGrid();
+            // 清理可能存在的旧挑战
+            remove(ref(database, `challenges/${currentUser.id}`));
         };
 
-        // DOM 元素
-        const elements = {
-            loginModal: document.getElementById('login-modal'),
-            inviteModal: document.getElementById('invite-modal'),
-            userList: document.getElementById('user-list'),
-            onlineCount: document.getElementById('online-count'),
-            currentUser: document.getElementById('current-user'),
-            connectionStatus: document.getElementById('connection-status'),
-            gameBoard: document.getElementById('game-board'),
-            turnIndicator: document.getElementById('turn-indicator'),
-            chatMessages: document.getElementById('chat-messages'),
-            chatInput: document.getElementById('chat-input'),
-            sendMessage: document.getElementById('send-message'),
-            chatRoom: document.getElementById('chat-room'),
-            backToLobby: document.getElementById('back-to-lobby'),
-            resignBtn: document.getElementById('resign-btn'),
-            saveUsername: document.getElementById('save-username'),
-            acceptInvite: document.getElementById('accept-invite'),
-            declineInvite: document.getElementById('decline-invite'),
-            usernameInput: document.getElementById('username'),
-            inviterName: document.getElementById('inviter-name')
-        };
-
-        // 初始化函数
-        function init() {
-            // 检查是否有保存的用户名
-            const savedUsername = getCookie('username');
-            if (savedUsername) {
-                gameState.username = savedUsername;
-                elements.currentUser.textContent = savedUsername;
-                connectToFirebase();
+        window.setNickname = () => {
+            const newNickname = nicknameInput.value.trim();
+            if (!newNickname) {
+                alert('昵称不能为空');
+                return;
+            }
+            currentUser.nickname = newNickname;
+            localStorage.setItem('gobangUserNickname', newNickname);
+            currentNicknameDisplay.textContent = `当前昵称: ${newNickname}`;
+            if (currentUser.status !== 'disconnected') { // 如果之前未加入或已断开，则重新加入
+                 joinLobby();
             } else {
-                showLoginModal();
+                updateUserPresence(); // 仅更新昵称
+            }
+        };
+
+        function joinLobby() {
+            if (!currentUser.nickname) {
+                alert('请先设置昵称！');
+                currentTurnDisplay.textContent = '请先设置昵称才能加入大厅';
+                return;
+            }
+            if (challengeStatusListener) {
+                challengeStatusListener(); // 停止监听发出的挑战
+                challengeStatusListener = null;
+            }
+            currentUser.challenging = null; // 重置正在挑战的对象
+            currentUser.status = 'free';
+            currentUser.roomId = null;
+            updateUserPresence();
+            listenToOnlineUsers();
+            listenForChallenges();
+            if (currentUser.nickname) { // 确保有昵称才监听
+                 listenToSelfUserUpdates();
+            }
+            startHeartbeat();
+            currentTurnDisplay.textContent = '欢迎来到五子棋大厅！选择一位玩家开始游戏。';
+        }
+
+        function updateUserPresence() {
+            const userRef = ref(database, `users/${currentUser.id}`);
+            const presenceData = {
+                nickname: currentUser.nickname,
+                status: currentUser.status,
+                roomId: currentUser.roomId,
+                challenging: currentUser.challenging, // 添加此行
+                lastSeen: serverTimestamp()
+            };
+            set(userRef, presenceData);
+            onDisconnect(userRef).remove(); // 用户离线时自动删除数据
+        }
+
+        function startHeartbeat() {
+            if (heartBeatInterval) clearInterval(heartBeatInterval);
+            heartBeatInterval = setInterval(() => {
+                if (currentUser.nickname && currentUser.status !== 'disconnected') {
+                    update(ref(database, `users/${currentUser.id}`), { lastSeen: serverTimestamp() });
+                }
+            }, 30000); // 30秒心跳
+
+            // 定期清理不活跃用户 (例如超过2分钟没有心跳)
+            setInterval(cleanupInactiveUsers, 60000);
+        }
+
+        function cleanupInactiveUsers() {
+            const usersRef = ref(database, 'users');
+            get(usersRef).then(snapshot => {
+                if (snapshot.exists()) {
+                    const now = Date.now();
+                    snapshot.forEach(childSnapshot => {
+                        const user = childSnapshot.val();
+                        const userId = childSnapshot.key;
+                        if (user.lastSeen && (now - user.lastSeen > 120000)) { // 2分钟
+                            console.log(`Cleaning up inactive user: ${userId}`);
+                            remove(ref(database, `users/${userId}`));
+                            // 如果该用户在游戏中，也需要处理房间
+                            if(user.roomId) {
+                                handlePlayerDisconnectInRoom(user.roomId, userId, true);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function listenToOnlineUsers() {
+            const usersRef = ref(database, 'users');
+            onValue(usersRef, (snapshot) => {
+                onlineUsersList.innerHTML = '';
+                let count = 0;
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnapshot) => {
+                        const user = childSnapshot.val();
+                        const userId = childSnapshot.key;
+                        if (userId === currentUser.id) return; //不显示自己
+                        count++;
+                        const userItem = document.createElement('div');
+                        userItem.className = 'user-item';
+                        userItem.innerHTML = `
+                            <span>${user.nickname || '匿名用户'}</span>
+                            <span class="status status-${user.status}">${user.status === 'free' ? '空闲' : '游戏中'}</span>
+                            ${user.status === 'free' ? `<button onclick="sendChallenge('${userId}', '${user.nickname}')">挑战</button>` : ''}
+                        `;
+                        onlineUsersList.appendChild(userItem);
+                    });
+                }
+                onlineCount.textContent = count;
+            });
+        }
+
+        window.sendChallenge = (targetUserId, targetUserNickname) => {
+            if (!currentUser.nickname) { alert('请先设置昵称'); return; }
+            if (currentUser.status === 'playing') { alert('您已在游戏中'); return; }
+            if (currentUser.status === 'challenging' && currentUser.challenging === targetUserId) {
+                alert(`您已向 ${targetUserNickname} 发出挑战，请耐心等待。`);
+                return;
             }
 
-            // 设置事件监听器
-            setupEventListeners();
+            // 清除可能存在的旧挑战 (对自己或对他人)
+            if (currentUser.challenging) {
+                remove(ref(database, `challenges/${currentUser.challenging}/${currentUser.id}`)); // 清除对之前玩家的挑战
+            }
+            remove(ref(database, `challenges/${targetUserId}/${currentUser.id}`)); // 清除可能重复的挑战
 
-            // 初始化棋盘
-            initBoard();
+            const challengeRef = ref(database, `challenges/${targetUserId}/${currentUser.id}`);
+            set(challengeRef, {
+                fromId: currentUser.id,
+                fromNickname: currentUser.nickname,
+                timestamp: serverTimestamp(),
+                status: 'pending' // 'pending', 'accepted', 'rejected'
+            });
+            currentUser.status = 'challenging';
+            currentUser.challenging = targetUserId;
+            updateUserPresence(); // 更新自己的状态
+
+            currentTurnDisplay.textContent = `已向 ${targetUserNickname} 发出挑战，等待回应...`;
+            gameMessages.innerHTML = `已向 ${targetUserNickname} 发出挑战，等待回应...`;
+
+            // 监听自己发出的这个挑战的状态
+            listenToSentChallengeStatus(targetUserId);
+        };
+
+        let challengeStatusListener = null; // 用于取消监听
+
+        function listenToSentChallengeStatus(targetUserId) {
+            if (challengeStatusListener) challengeStatusListener(); // 取消之前的监听
+
+            const sentChallengeRef = ref(database, `challenges/${targetUserId}/${currentUser.id}`);
+            challengeStatusListener = onValue(sentChallengeRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const challengeData = snapshot.val();
+                    if (challengeData.status === 'accepted') {
+                        // 对方接受了挑战，此时应该由接受方创建房间并更新双方状态
+                        // 挑战方在这里等待房间信息，或者直接通过用户状态变化进入房间
+                        gameMessages.innerHTML = `${targetUserNickname} 接受了你的挑战！正在进入房间...`; // targetUserNickname is not defined here, use targetUserId
+                        currentTurnDisplay.textContent = "挑战已被接受！";
+                        // 通常接受方会创建房间并将roomId写入双方用户数据，挑战方通过监听自身用户数据变化进入游戏
+                        // 此处不再直接调用startGame，而是依赖用户状态的roomId变化
+                        if (challengeStatusListener) challengeStatusListener(); // 停止监听这个挑战
+                        remove(ref(database, `challenges/${targetUserId}/${currentUser.id}`)); // 清理挑战
+                        currentUser.challenging = null; // 清空正在挑战的对象
+                        // updateUserPresence(); // 状态会在进入房间时更新
+                    } else if (challengeData.status === 'rejected') {
+                        gameMessages.innerHTML = `${targetUserId} 拒绝了你的挑战。`;
+                        currentTurnDisplay.textContent = "挑战已被拒绝。";
+                        if (challengeStatusListener) challengeStatusListener(); // 停止监听这个挑战
+                        remove(ref(database, `challenges/${targetUserId}/${currentUser.id}`)); // 清理挑战
+                        currentUser.status = 'free';
+                        currentUser.challenging = null;
+                        updateUserPresence();
+                    }
+                } else {
+                    // 挑战节点被删除，可能对方已响应或取消
+                    if (currentUser.status === 'challenging') { // 避免在游戏中被错误重置
+                        // gameMessages.innerHTML = "挑战已结束或取消。";
+                        // currentTurnDisplay.textContent = "可发起新的挑战。";
+                        // currentUser.status = 'free';
+                        // currentUser.challenging = null;
+                        // updateUserPresence();
+                    }
+                    if (challengeStatusListener) challengeStatusListener();
+                }
+            });
         }
 
-        // 显示登录模态框
-        function showLoginModal() {
-            elements.loginModal.classList.add('active');
+        function listenForChallenges() {
+            const userChallengesRef = ref(database, `challenges/${currentUser.id}`);
+            onValue(userChallengesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const challenges = snapshot.val();
+                    const firstChallengeKey = Object.keys(challenges)[0];
+                    const challengeData = challenges[firstChallengeKey];
+                    
+                    // 确保只处理 'pending' 状态的挑战，避免重复显示已接受或拒绝的
+                    if (challengeData && challengeData.status === 'pending') { 
+                        challengingPlayer = { id: challengeData.fromId, nickname: challengeData.fromNickname };
+                        document.getElementById('challengeFrom').textContent = `${challengeData.fromNickname} (ID: ${challengeData.fromId})`;
+                        document.getElementById('challengeModal').style.display = 'flex';
+                    } else if (!challengeData || challengeData.status !== 'pending') {
+                        // 如果挑战不是pending状态，或者不存在，则隐藏模态框
+                        document.getElementById('challengeModal').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('challengeModal').style.display = 'none';
+                }
+            });
         }
 
-        // 隐藏登录模态框
-        function hideLoginModal() {
-            elements.loginModal.classList.remove('active');
-        }
+        window.acceptChallenge = () => {
+            if (!challengingPlayer) return;
+            document.getElementById('challengeModal').style.display = 'none';
 
-        // 设置事件监听器
-        function setupEventListeners() {
-            // 保存用户名
-            elements.saveUsername.addEventListener('click', () => {
-                const username = elements.usernameInput.value.trim();
-                if (username.length < 2 || username.length > 20) {
-                    alert('昵称长度必须在2-20个字符之间');
+            const roomId = `room_${currentUser.id}_${challengingPlayer.id}_${Date.now()}`.substring(0,50); //确保ID不超长
+            const player1 = { id: challengingPlayer.id, nickname: challengingPlayer.nickname, piece: 'black' }; // 挑战者执黑
+            const player2 = { id: currentUser.id, nickname: currentUser.nickname, piece: 'white' };   // 被挑战者执白
+
+            const newRoom = {
+                players: {
+                    [player1.id]: player1,
+                    [player2.id]: player2
+                },
+                board: Array(BOARD_SIZE * BOARD_SIZE).fill(0), // 0: empty, 1: black, 2: white
+                currentPlayerId: player1.id, // 黑子先手
+                status: 'playing',
+                createdAt: serverTimestamp(),
+                moves: [],
+                winner: null
+            };
+
+            set(ref(database, `rooms/${roomId}`), newRoom).then(() => {
+                // 更新双方用户状态，包含roomId
+                update(ref(database, `users/${player1.id}`), { status: 'playing', roomId: roomId });
+                update(ref(database, `users/${currentUser.id}`), { status: 'playing', roomId: roomId });
+                
+                // 更新挑战状态为 accepted
+                update(ref(database, `challenges/${currentUser.id}/${challengingPlayer.id}`), { status: 'accepted' });
+                
+                currentUser.status = 'playing';
+                currentUser.roomId = roomId;
+                // updateUserPresence(); // 状态已在上面更新
+
+                // 不需要立即清除挑战，让挑战方监听到accepted状态后再自行清除
+                // remove(ref(database, `challenges/${currentUser.id}/${challengingPlayer.id}`));
+                // 如果我向对方也发起了挑战，也应清除 (可选，但最好也通过状态同步)
+                // remove(ref(database, `challenges/${challengingPlayer.id}/${currentUser.id}`));
+
+                startGame(roomId, newRoom);
+            }).catch(error => {
+                console.error("Accept challenge failed: ", error);
+                gameMessages.innerHTML = "接受挑战失败，请重试。";
+                // 如果失败，可能需要重置挑战状态或通知对方
+                update(ref(database, `challenges/${currentUser.id}/${challengingPlayer.id}`), { status: 'pending' }); // 恢复pending
+            });
+        };
+
+        window.rejectChallenge = () => {
+            document.getElementById('challengeModal').style.display = 'none';
+            if (challengingPlayer) {
+                // 更新挑战状态为 rejected
+                update(ref(database, `challenges/${currentUser.id}/${challengingPlayer.id}`), { status: 'rejected' }).then(() => {
+                    gameMessages.innerHTML = `已拒绝来自 ${challengingPlayer.nickname} 的挑战。`;
+                    // 不需要立即清除，让挑战方监听到rejected状态后再自行清除
+                    // remove(ref(database, `challenges/${currentUser.id}/${challengingPlayer.id}`));
+                }).catch(error => {
+                     console.error("Reject challenge failed: ", error);
+                     gameMessages.innerHTML = "拒绝挑战失败，请重试。";
+                });
+                challengingPlayer = null;
+            }
+        };
+
+        function startGame(roomId, roomData) {
+            console.log("Starting game in room:", roomId, roomData);
+            currentUser.roomId = roomId;
+            currentUser.status = 'playing';
+            updateUserPresence();
+            leaveGameButton.style.display = 'inline-block';
+
+            playersInfoDisplay.innerHTML = `黑方: ${roomData.players[Object.keys(roomData.players).find(id => roomData.players[id].piece === 'black')].nickname} vs 白方: ${roomData.players[Object.keys(roomData.players).find(id => roomData.players[id].piece === 'white')].nickname}`;
+            gameMessages.innerHTML = "游戏开始！";
+
+            if (currentRoom) currentRoom(); // 取消之前的房间监听
+            currentRoom = onValue(ref(database, `rooms/${roomId}`), (snapshot) => {
+                if (!snapshot.exists()) {
+                    console.log("Room deleted or game ended.");
+                    if (currentUser.status === 'playing') { // 避免重复提示
+                        alert("游戏已结束或房间已解散。");
+                        resetToLobbyState();
+                    }
+                    return;
+                }
+                const updatedRoomData = snapshot.val();
+                renderBoard(updatedRoomData.board);
+                
+                if (updatedRoomData.winner) {
+                    let winnerNickname = updatedRoomData.players[updatedRoomData.winner]?.nickname || '未知玩家';
+                    if (updatedRoomData.winner === 'draw') winnerNickname = '平局';
+                    showGameResult(`${winnerNickname} 获胜!`);
+                    // 游戏结束后，稍作延迟再清理房间，以便双方都能看到结果
+                    setTimeout(() => {
+                        if(currentUser.id === Object.keys(updatedRoomData.players)[0]) { // 让其中一个玩家清理房间
+                           remove(ref(database, `rooms/${roomId}`));
+                        }
+                    }, 5000);
+                    resetToLobbyState(); // 获胜后也返回大厅状态
                     return;
                 }
 
-                gameState.username = username;
-                setCookie('username', username, 1);
-                elements.currentUser.textContent = username;
-                hideLoginModal();
-                connectToFirebase();
-            });
-
-            // 发送消息
-            elements.sendMessage.addEventListener('click', sendChatMessage);
-            elements.chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendChatMessage();
+                const myRole = updatedRoomData.players[currentUser.id]?.piece;
+                if (updatedRoomData.currentPlayerId === currentUser.id) {
+                    currentTurnDisplay.textContent = `轮到你 (${myRole}) 下棋`;
+                } else {
+                    const opponentNickname = updatedRoomData.players[updatedRoomData.currentPlayerId]?.nickname || '对方';
+                    const opponentRole = updatedRoomData.players[updatedRoomData.currentPlayerId]?.piece;
+                    currentTurnDisplay.textContent = `等待 ${opponentNickname} (${opponentRole}) 下棋`;
                 }
             });
-
-            // 返回大厅
-            elements.backToLobby.addEventListener('click', backToLobby);
-
-            // 认输
-            elements.resignBtn.addEventListener('click', resignGame);
-
-            // 邀请处理
-            elements.acceptInvite.addEventListener('click', acceptInvite);
-            elements.declineInvite.addEventListener('click', declineInvite);
-
-            // 棋盘点击事件
-            elements.gameBoard.addEventListener('click', handleBoardClick);
-        }
-
-        // 连接到Firebase
-        function connectToFirebase() {
-            gameState.userId = generateUserId();
-
-            // 更新用户状态
-            updateUserStatus('idle');
-
-            // 设置心跳
-            setInterval(sendHeartbeat, 30000);
-
-            // 监听用户列表变化
-            database.ref('users').on('value', (snapshot) => {
-                const users = snapshot.val() || {};
-                updateUserList(users);
-                elements.onlineCount.textContent = Object.keys(users).length;
-
-                // 清理离线用户
-                cleanupInactiveUsers(users);
-            });
-
-            // 监听邀请
-            database.ref(`invitations/${gameState.userId}`).on('value', (snapshot) => {
-                const invitation = snapshot.val();
-                if (invitation && invitation.status === 'pending') {
-                    showInviteModal(invitation);
-                }
-            });
-
-            // 监听聊天消息
-            database.ref(`chat/${gameState.currentRoom}`).on('child_added', (snapshot) => {
-                const message = snapshot.val();
-                addChatMessage(message);
-            });
-
-            // 监听游戏状态
-            database.ref('games').on('value', (snapshot) => {
-                const games = snapshot.val() || {};
-                if (gameState.currentGame && games[gameState.currentGame]) {
-                    updateGameState(games[gameState.currentGame]);
-                }
-            });
-
-            // 更新连接状态
-            elements.connectionStatus.innerHTML = '<span class="status-indicator status-online"></span> 已连接';
-        }
-
-        // 生成用户ID
-        function generateUserId() {
-            return 'user_' + Math.random().toString(36).substr(2, 8);
-        }
-
-        // 更新用户状态
-        function updateUserStatus(status) {
-            gameState.status = status;
-
-            database.ref(`users/${gameState.userId}`).set({
-                username: gameState.username,
-                status: status,
-                lastActive: Date.now(),
-                currentGame: gameState.currentGame || null
-            });
-        }
-
-        // 发送心跳
-        function sendHeartbeat() {
-            if (gameState.userId) {
-                database.ref(`users/${gameState.userId}/lastActive`).set(Date.now());
+            
+            // 初始渲染
+            renderBoard(roomData.board);
+            const myInitialRole = roomData.players[currentUser.id]?.piece;
+            if (roomData.currentPlayerId === currentUser.id) {
+                currentTurnDisplay.textContent = `轮到你 (${myInitialRole}) 下棋`;
+            } else {
+                const opponentInitialNickname = roomData.players[roomData.currentPlayerId]?.nickname || '对方';
+                const opponentInitialRole = roomData.players[roomData.currentPlayerId]?.piece;
+                currentTurnDisplay.textContent = `等待 ${opponentInitialNickname} (${opponentInitialRole}) 下棋`;
             }
         }
 
-        // 清理不活跃用户
-        function cleanupInactiveUsers(users) {
-            const now = Date.now();
-            const inactiveThreshold = 60000; // 60秒
-
-            for (const userId in users) {
-                if (now - users[userId].lastActive > inactiveThreshold) {
-                    // 从游戏中移除
-                    if (users[userId].currentGame) {
-                        database.ref(`games/${users[userId].currentGame}`).transaction((game) => {
-                            if (game) {
-                                if (game.players[userId]) {
-                                    delete game.players[userId];
-                                }
-                                if (game.spectators && game.spectators[userId]) {
-                                    delete game.spectators[userId];
-                                }
-                            }
-                            return game;
-                        });
-                    }
-
-                    // 从用户列表中移除
-                    database.ref(`users/${userId}`).remove();
+        function createBoardGrid() {
+            gameBoard.innerHTML = ''; // Clear previous board
+            for (let i = 0; i < BOARD_SIZE -1; i++) {
+                for (let j = 0; j < BOARD_SIZE -1; j++) {
+                    // Draw grid lines (simplified, actual lines are borders of the board and cells)
                 }
             }
-        }
-
-        // 更新用户列表
-        function updateUserList(users) {
-            elements.userList.innerHTML = '';
-
-            for (const userId in users) {
-                if (userId === gameState.userId) continue; // 跳过自己
-
-                const user = users[userId];
-                const userItem = document.createElement('div');
-                userItem.className = `user-item ${user.status === 'playing' ? 'playing' : ''}`;
-
-                userItem.innerHTML = `
-                    <div class="user-info">
-                        <div class="user-avatar">${user.username.charAt(0)}</div>
-                        <div>
-                            <div class="user-name">${user.username}</div>
-                            <div class="user-status status-${user.status}">${user.status === 'playing' ? '对局中' : '空闲中'}</div>
-                        </div>
-                    </div>
-                    <div class="action-buttons">
-                        ${user.status === 'idle' ?
-                            `<button class="btn btn-primary invite-btn" data-userid="${userId}">约战</button>` :
-                            `<button class="btn btn-warning spectate-btn" data-userid="${userId}">观战</button>`
-                        }
-                    </div>
-                `;
-
-                elements.userList.appendChild(userItem);
-            }
-
-            // 添加事件监听器
-            document.querySelectorAll('.invite-btn').forEach(btn => {
-                btn.addEventListener('click', () => sendInvite(btn.dataset.userid));
-            });
-
-            document.querySelectorAll('.spectate-btn').forEach(btn => {
-                btn.addEventListener('click', () => spectateGame(btn.dataset.userid));
-            });
-        }
-
-        // 发送邀请
-        function sendInvite(targetUserId) {
-            const invitationRef = database.ref(`invitations/${targetUserId}`);
-
-            invitationRef.set({
-                fromUserId: gameState.userId,
-                fromUsername: gameState.username,
-                status: 'pending',
-                timestamp: Date.now()
-            });
-
-            // 添加系统消息
-            addSystemMessage(`已向玩家发送对战邀请`);
-        }
-
-        // 显示邀请模态框
-        function showInviteModal(invitation) {
-            elements.inviterName.textContent = invitation.fromUsername;
-            elements.inviteModal.classList.add('active');
-
-            // 设置邀请处理函数
-            elements.acceptInvite.onclick = () => acceptInvite(invitation);
-            elements.declineInvite.onclick = () => declineInvite(invitation);
-        }
-
-        // 接受邀请
-        function acceptInvite(invitation) {
-            elements.inviteModal.classList.remove('active');
-
-            // 创建新游戏
-            const gameId = 'game_' + Date.now();
-            gameState.currentGame = gameId;
-            gameState.currentRoom = gameId;
-            gameState.status = 'playing';
-            gameState.playerColor = 'black'; // 邀请方为黑棋先手
-
-            // 设置游戏数据
-            database.ref(`games/${gameId}`).set({
-                players: {
-                    [invitation.fromUserId]: { username: invitation.fromUsername, color: 'black', isTurn: true },
-                    [gameState.userId]: { username: gameState.username, color: 'white', isTurn: false }
-                },
-                board: Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(null)),
-                currentPlayer: 'black',
-                winner: null,
-                spectators: {}
-            });
-
-            // 更新用户状态
-            updateUserStatus('playing');
-            database.ref(`users/${invitation.fromUserId}/status`).set('playing');
-            database.ref(`users/${invitation.fromUserId}/currentGame`).set(gameId);
-            database.ref(`users/${gameState.userId}/currentGame`).set(gameId);
-
-            // 清除邀请
-            database.ref(`invitations/${gameState.userId}`).remove();
-
-            // 切换聊天室
-            elements.chatRoom.textContent = `房间: ${gameId.substring(0, 6)}`;
-
-            // 添加系统消息
-            addSystemMessage(`已加入游戏，您是白方`);
-
-            // 更新界面
-            elements.turnIndicator.textContent = "等待黑方落子...";
-        }
-
-        // 拒绝邀请
-        function declineInvite() {
-            elements.inviteModal.classList.remove('active');
-            database.ref(`invitations/${gameState.userId}`).remove();
-            addSystemMessage("已拒绝对战邀请");
-        }
-
-        // 观战游戏
-        function spectateGame(userId) {
-            database.ref(`users/${userId}`).once('value').then(snapshot => {
-                const user = snapshot.val();
-                if (user && user.currentGame) {
-                    gameState.currentGame = user.currentGame;
-                    gameState.currentRoom = user.currentGame;
-                    gameState.status = 'spectating';
-
-                    // 更新用户状态
-                    updateUserStatus('spectating');
-
-                    // 添加到观战者列表
-                    database.ref(`games/${gameState.currentGame}/spectators/${gameState.userId}`).set({
-                        username: gameState.username
-                    });
-
-                    // 切换聊天室
-                    elements.chatRoom.textContent = `房间: ${gameState.currentGame.substring(0, 6)}`;
-
-                    // 添加系统消息
-                    addSystemMessage(`已进入观战模式`);
-
-                    // 更新游戏状态
-                    database.ref(`games/${gameState.currentGame}`).once('value').then(snap => {
-                        if (snap.exists()) {
-                            updateGameState(snap.val());
-                        }
-                    });
-                }
-            });
-        }
-
-        // 初始化棋盘
-        function initBoard() {
-            const ctx = elements.gameBoard.getContext('2d');
-            const boardSize = BOARD_SIZE * CELL_SIZE;
-
-            // 设置画布尺寸
-            elements.gameBoard.width = boardSize + BOARD_PADDING * 2;
-            elements.gameBoard.height = boardSize + BOARD_PADDING * 2;
-
-            // 绘制棋盘背景
-            ctx.fillStyle = '#f0d9b5';
-            ctx.fillRect(0, 0, elements.gameBoard.width, elements.gameBoard.height);
-
-            // 绘制网格线
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 1;
-
+            // More robust grid drawing
             for (let i = 0; i < BOARD_SIZE; i++) {
-                // 横线
-                ctx.beginPath();
-                ctx.moveTo(BOARD_PADDING, BOARD_PADDING + i * CELL_SIZE);
-                ctx.lineTo(BOARD_PADDING + boardSize - CELL_SIZE, BOARD_PADDING + i * CELL_SIZE);
-                ctx.stroke();
+                const hLine = document.createElement('div');
+                hLine.className = 'grid-line horizontal';
+                hLine.style.top = `${i * CELL_SIZE}px`;
+                hLine.style.left = `0px`;
+                hLine.style.width = `${(BOARD_SIZE -1) * CELL_SIZE}px`; // Lines should span intersections
+                if (i < BOARD_SIZE -1) gameBoard.appendChild(hLine); // Don't draw last horizontal line inside board
 
-                // 竖线
-                ctx.beginPath();
-                ctx.moveTo(BOARD_PADDING + i * CELL_SIZE, BOARD_PADDING);
-                ctx.lineTo(BOARD_PADDING + i * CELL_SIZE, BOARD_PADDING + boardSize - CELL_SIZE);
-                ctx.stroke();
+                const vLine = document.createElement('div');
+                vLine.className = 'grid-line vertical';
+                vLine.style.left = `${i * CELL_SIZE}px`;
+                vLine.style.top = `0px`;
+                vLine.style.height = `${(BOARD_SIZE-1) * CELL_SIZE}px`;
+                 if (i < BOARD_SIZE -1) gameBoard.appendChild(vLine); // Don't draw last vertical line inside board
+            }
+
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const intersection = document.createElement('div');
+                    intersection.className = 'intersection';
+                    intersection.style.left = `${c * CELL_SIZE}px`;
+                    intersection.style.top = `${r * CELL_SIZE}px`;
+                    intersection.dataset.row = r;
+                    intersection.dataset.col = c;
+                    intersection.onclick = () => handleCellClick(r, c);
+                    gameBoard.appendChild(intersection);
+                }
             }
         }
+        
+        function renderBoard(boardState) {
+            // Clear existing pieces
+            document.querySelectorAll('.piece').forEach(p => p.remove());
 
-        // 更新游戏状态
-        function updateGameState(gameData) {
-            gameState.board = gameData.board;
-            gameState.players = gameData.players;
-            gameState.spectators = gameData.spectators || {};
-
-            // 更新棋盘
-            renderBoard();
-
-            // 更新玩家信息
-            renderPlayerInfo();
-
-            // 更新回合指示器
-            if (gameData.winner) {
-                if (gameData.winner === 'draw') {
-                    elements.turnIndicator.textContent = "游戏结束：平局！";
-                } else {
-                    const winner = Object.values(gameData.players).find(p => p.color === gameData.winner);
-                    elements.turnIndicator.textContent = `游戏结束：${winner.username} 获胜！`;
-                }
-            } else if (gameState.status === 'playing') {
-                const currentPlayer = Object.values(gameData.players).find(p => p.isTurn);
-                gameState.isMyTurn = currentPlayer && currentPlayer.color === gameState.playerColor;
-
-                if (gameState.isMyTurn) {
-                    elements.turnIndicator.textContent = "轮到您落子";
-                } else {
-                    elements.turnIndicator.textContent = `等待对方落子...`;
-                }
-            } else if (gameState.status === 'spectating') {
-                const currentPlayer = Object.values(gameData.players).find(p => p.isTurn);
-                elements.turnIndicator.textContent = `当前回合：${currentPlayer.username}`;
-            }
-        }
-
-        // 渲染棋盘
-        function renderBoard() {
-            const ctx = elements.gameBoard.getContext('2d');
-            const boardSize = BOARD_SIZE * CELL_SIZE;
-
-            // 清除棋盘
-            ctx.clearRect(0, 0, elements.gameBoard.width, elements.gameBoard.height);
-            initBoard(); // 重新绘制棋盘背景
-
-            // 绘制棋子
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                for (let col = 0; col < BOARD_SIZE; col++) {
-                    const stone = gameState.board[row][col];
-                    if (stone) {
-                        const x = BOARD_PADDING + col * CELL_SIZE;
-                        const y = BOARD_PADDING + row * CELL_SIZE;
-
-                        // 绘制棋子
-                        ctx.beginPath();
-                        ctx.arc(x, y, STONE_RADIUS, 0, Math.PI * 2);
-                        ctx.fillStyle = stone === 'black' ? '#2c3e50' : '#ecf0f1';
-                        ctx.fill();
-                        ctx.strokeStyle = '#000';
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const pieceType = boardState[r * BOARD_SIZE + c];
+                    if (pieceType !== 0) {
+                        const piece = document.createElement('div');
+                        piece.className = `piece piece-${pieceType === 1 ? 'black' : 'white'}`;
+                        piece.style.left = `${c * CELL_SIZE}px`;
+                        piece.style.top = `${r * CELL_SIZE}px`;
+                        gameBoard.appendChild(piece);
                     }
                 }
             }
         }
 
-        // 渲染玩家信息
-        function renderPlayerInfo() {
-            const container = document.querySelector('.game-board-container');
+        function handleCellClick(row, col) {
+            if (!currentUser.roomId || currentUser.status !== 'playing') return;
 
-            // 移除旧玩家卡片
-            const oldCards = document.querySelectorAll('.player-card');
-            oldCards.forEach(card => card.remove());
+            const roomRef = ref(database, `rooms/${currentUser.roomId}`);
+            get(roomRef).then(snapshot => {
+                if (!snapshot.exists()) return;
+                const roomData = snapshot.val();
 
-            // 添加玩家卡片
-            for (const userId in gameState.players) {
-                const player = gameState.players[userId];
-                const isCurrentUser = userId === gameState.userId;
+                if (roomData.currentPlayerId !== currentUser.id || roomData.winner) return;
+                if (roomData.board[row * BOARD_SIZE + col] !== 0) return; // Cell not empty
 
-                const card = document.createElement('div');
-                card.className = 'player-card';
-                card.style.position = 'absolute';
-                card.style.top = '20px';
-                card.style[player.color === 'black' ? 'left' : 'right'] = '20px';
-                card.style.backgroundColor = player.color === 'black' ? '#2c3e50' : '#ecf0f1';
-                card.style.color = player.color === 'black' ? '#fff' : '#000';
+                const pieceType = roomData.players[currentUser.id].piece === 'black' ? 1 : 2;
+                const newBoard = [...roomData.board];
+                newBoard[row * BOARD_SIZE + col] = pieceType;
 
-                card.innerHTML = `
-                    <div class="player-name">${player.username} ${isCurrentUser ? '(您)' : ''}</div>
-                    <div class="player-role">${player.color === 'black' ? '● 黑方' : '○ 白方'}</div>
-                `;
+                const nextPlayerId = Object.keys(roomData.players).find(id => id !== currentUser.id);
+                
+                const updates = {};
+                updates[`rooms/${currentUser.roomId}/board`] = newBoard;
+                updates[`rooms/${currentUser.roomId}/currentPlayerId`] = nextPlayerId;
+                updates[`rooms/${currentUser.roomId}/moves`] = [...(roomData.moves || []), {player: currentUser.id, row, col, piece: pieceType, timestamp: serverTimestamp()}];
 
-                container.appendChild(card);
-            }
-
-            // 添加观战者信息
-            const spectatorCount = Object.keys(gameState.spectators).length;
-            if (spectatorCount > 0) {
-                const info = document.createElement('div');
-                info.className = 'info-item';
-                info.style.position = 'absolute';
-                info.style.bottom = '20px';
-                info.style.left = '20px';
-                info.innerHTML = `<i class="fas fa-eye"></i> ${spectatorCount} 人观战`;
-                container.appendChild(info);
-            }
-        }
-
-        // 处理棋盘点击
-        function handleBoardClick(event) {
-            if (gameState.status !== 'playing' || !gameState.isMyTurn || gameState.board.winner) return;
-
-            const rect = elements.gameBoard.getBoundingClientRect();
-            const x = event.clientX - rect.left - BOARD_PADDING;
-            const y = event.clientY - rect.top - BOARD_PADDING;
-
-            // 计算行列
-            const col = Math.round(x / CELL_SIZE);
-            const row = Math.round(y / CELL_SIZE);
-
-            if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
-                // 检查位置是否为空
-                if (!gameState.board[row][col]) {
-                    // 落子
-                    placeStone(row, col, gameState.playerColor);
+                // Check for win
+                if (checkWin(newBoard, row, col, pieceType)) {
+                    updates[`rooms/${currentUser.roomId}/winner`] = currentUser.id;
+                    updates[`rooms/${currentUser.roomId}/status`] = 'finished';
+                } else if (newBoard.every(cell => cell !== 0)) { // Check for draw
+                    updates[`rooms/${currentUser.roomId}/winner`] = 'draw';
+                    updates[`rooms/${currentUser.roomId}/status`] = 'finished';
                 }
-            }
-        }
-
-        // 落子
-        function placeStone(row, col, color) {
-            // 更新本地状态
-            gameState.board[row][col] = color;
-
-            // 更新Firebase
-            database.ref(`games/${gameState.currentGame}`).transaction((game) => {
-                if (game) {
-                    // 更新棋盘
-                    game.board[row][col] = color;
-
-                    // 检查胜利
-                    if (checkWin(row, col, color, game.board)) {
-                        game.winner = color;
-                    } else if (isBoardFull(game.board)) {
-                        game.winner = 'draw';
-                    } else {
-                        // 切换回合
-                        game.currentPlayer = color === 'black' ? 'white' : 'black';
-                        for (const userId in game.players) {
-                            game.players[userId].isTurn = game.players[userId].color === game.currentPlayer;
-                        }
-                    }
-                }
-                return game;
+                
+                update(ref(database), updates);
             });
         }
 
-        // 检查胜利
-        function checkWin(row, col, color, board) {
+        function checkWin(board, r, c, piece) {
             const directions = [
-                [0, 1],   // 水平
-                [1, 0],   // 垂直
-                [1, 1],   // 对角线
-                [1, -1]   // 反对角线
+                { dr: 0, dc: 1 }, // Horizontal
+                { dr: 1, dc: 0 }, // Vertical
+                { dr: 1, dc: 1 }, // Diagonal \ 
+                { dr: 1, dc: -1 } // Diagonal / 
             ];
 
-            for (const [dx, dy] of directions) {
+            for (const { dr, dc } of directions) {
                 let count = 1;
-
-                // 正向检查
+                // Check in one direction
                 for (let i = 1; i < 5; i++) {
-                    const newRow = row + i * dx;
-                    const newCol = col + i * dy;
-
-                    if (newRow >= 0 && newRow < BOARD_SIZE &&
-                        newCol >= 0 && newCol < BOARD_SIZE &&
-                        board[newRow][newCol] === color) {
+                    const nr = r + dr * i;
+                    const nc = c + dc * i;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr * BOARD_SIZE + nc] === piece) {
                         count++;
                     } else {
                         break;
                     }
                 }
-
-                // 反向检查
+                // Check in opposite direction
                 for (let i = 1; i < 5; i++) {
-                    const newRow = row - i * dx;
-                    const newCol = col - i * dy;
-
-                    if (newRow >= 0 && newRow < BOARD_SIZE &&
-                        newCol >= 0 && newCol < BOARD_SIZE &&
-                        board[newRow][newCol] === color) {
+                    const nr = r - dr * i;
+                    const nc = c - dc * i;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr * BOARD_SIZE + nc] === piece) {
                         count++;
                     } else {
                         break;
                     }
                 }
-
                 if (count >= 5) return true;
             }
-
             return false;
         }
 
-        // 检查棋盘是否已满
-        function isBoardFull(board) {
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                for (let col = 0; col < BOARD_SIZE; col++) {
-                    if (!board[row][col]) return false;
-                }
+        window.leaveGame = () => {
+            if (currentUser.roomId) {
+                handlePlayerDisconnectInRoom(currentUser.roomId, currentUser.id, false);
             }
-            return true;
-        }
-
-        // 发送聊天消息
-        function sendChatMessage() {
-            const message = elements.chatInput.value.trim();
-            if (message && gameState.userId) {
-                const messageData = {
-                    userId: gameState.userId,
-                    username: gameState.username,
-                    message: message,
-                    timestamp: Date.now()
-                };
-
-                database.ref(`chat/${gameState.currentRoom}`).push(messageData);
-                elements.chatInput.value = '';
-
-                // 添加本地消息
-                addChatMessage({
-                    ...messageData,
-                    isSelf: true
-                });
-            }
-        }
-
-        // 添加聊天消息
-        function addChatMessage(messageData) {
-            const messageElement = document.createElement('div');
-            const isSelf = messageData.userId === gameState.userId;
-            const isSystem = messageData.userId === 'system';
-
-            if (isSystem) {
-                messageElement.className = 'message message-system';
-                messageElement.textContent = messageData.message;
-            } else {
-                messageElement.className = `message ${isSelf ? 'message-self' : 'message-other'}`;
-                messageElement.innerHTML = `
-                    <div class="message-sender">${messageData.username}</div>
-                    <div class="message-content">${messageData.message}</div>
-                `;
-            }
-
-            elements.chatMessages.appendChild(messageElement);
-            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-        }
-
-        // 添加系统消息
-        function addSystemMessage(message) {
-            addChatMessage({
-                userId: 'system',
-                username: '系统',
-                message: message,
-                timestamp: Date.now()
-            });
-        }
-
-        // 返回大厅
-        function backToLobby() {
-            if (gameState.currentGame) {
-                // 从游戏中移除
-                if (gameState.status === 'playing') {
-                    database.ref(`games/${gameState.currentGame}/players/${gameState.userId}`).remove();
-
-                    // 如果只剩一个玩家，结束游戏
-                    database.ref(`games/${gameState.currentGame}/players`).once('value').then(snapshot => {
-                        if (snapshot.numChildren() === 1) {
-                            database.ref(`games/${gameState.currentGame}`).update({
-                                winner: Object.values(snapshot.val())[0].color
+            resetToLobbyState();
+        };
+        
+        function handlePlayerDisconnectInRoom(roomId, disconnectedUserId, isAutoCleanup = false) {
+             get(ref(database, `rooms/${roomId}`)).then(snapshot => {
+                if (snapshot.exists()) {
+                    const roomData = snapshot.val();
+                    if (roomData.status === 'playing') { // Only if game is ongoing
+                        const remainingPlayerId = Object.keys(roomData.players).find(id => id !== disconnectedUserId);
+                        if (remainingPlayerId) {
+                            // Mark remaining player as winner due to opponent disconnect
+                            update(ref(database, `rooms/${roomId}`), {
+                                winner: remainingPlayerId,
+                                status: 'finished',
+                                gameMessages: `${roomData.players[disconnectedUserId]?.nickname || '对方'} 已断开连接。`
                             });
+                             // The winner will see the message and then the room will be cleaned up by them or timeout
+                        } else {
+                            // Both players disconnected or only one player was in room data (should not happen)
+                            remove(ref(database, `rooms/${roomId}`));
                         }
-                    });
-                } else if (gameState.status === 'spectating') {
-                    database.ref(`games/${gameState.currentGame}/spectators/${gameState.userId}`).remove();
+                    } else if (roomData.status === 'finished' && isAutoCleanup) {
+                        // If game already finished and this is an auto cleanup, just remove room
+                        remove(ref(database, `rooms/${roomId}`));
+                    }
                 }
-
-                gameState.currentGame = null;
-            }
-
-            // 更新状态
-            gameState.status = 'idle';
-            gameState.currentRoom = 'lobby';
-            updateUserStatus('idle');
-
-            // 重置游戏状态
-            gameState.board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(null));
-            gameState.players = {};
-            gameState.spectators = [];
-
-            // 更新界面
-            elements.chatRoom.textContent = '大厅';
-            elements.turnIndicator.textContent = '请在大厅选择对手开始游戏';
-            renderBoard();
-
-            // 添加系统消息
-            addSystemMessage('已返回大厅');
-        }
-
-        // 认输
-        function resignGame() {
-            if (gameState.status !== 'playing' || !gameState.currentGame) return;
-
-            // 确定获胜方
-            const winnerColor = gameState.playerColor === 'black' ? 'white' : 'black';
-
-            // 更新游戏状态
-            database.ref(`games/${gameState.currentGame}`).update({
-                winner: winnerColor
             });
-
-            // 添加系统消息
-            addSystemMessage('您已认输，游戏结束');
         }
 
-        // Cookie 操作
-        function setCookie(name, value, days) {
-            const d = new Date();
-            d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-            const expires = "expires=" + d.toUTCString();
-            document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        }
-
-        function getCookie(name) {
-            const cookies = document.cookie.split(';');
-            for (const cookie of cookies) {
-                const [cookieName, cookieValue] = cookie.trim().split('=');
-                if (cookieName === name) {
-                    return cookieValue;
-                }
+        function resetToLobbyState() {
+            if (currentRoom) {
+                currentRoom(); // Stop listening to the old room
+                currentRoom = null;
             }
-            return null;
+            if (challengeStatusListener) {
+                challengeStatusListener(); // 停止监听发出的挑战
+                challengeStatusListener = null;
+            }
+            currentUser.challenging = null; // 重置正在挑战的对象
+            currentUser.status = 'free';
+            currentUser.roomId = null;
+            updateUserPresence();
+            playersInfoDisplay.innerHTML = '';
+            currentTurnDisplay.textContent = '欢迎回到大厅！';
+            leaveGameButton.style.display = 'none';
+            gameBoard.innerHTML = ''; // Clear pieces
+            createBoardGrid(); // Recreate grid for next game
+            gameMessages.innerHTML = "";
+            // Ensure challenge listener is active
+            if (!document.getElementById('challengeModal').style.display || document.getElementById('challengeModal').style.display === 'none') {
+                listenForChallenges(); 
+            }
         }
 
-        // 初始化应用
-        window.onload = init;
+        function showGameResult(message) {
+            document.getElementById('gameResultText').textContent = message;
+            document.getElementById('gameResultModal').style.display = 'flex';
+        }
+
+        window.closeGameResultModal = () => {
+            document.getElementById('gameResultModal').style.display = 'none';
+        };
+
+        // Graceful shutdown
+        window.addEventListener('beforeunload', () => {
+            if (currentUser.nickname) {
+                 // onDisconnect should handle most, but this is an explicit attempt
+                if (currentUser.roomId && currentUser.status === 'playing') {
+                    // If in game, try to notify opponent (simplified: just remove self)
+                    // A more complex solution would be to mark as disconnected in room
+                }
+                // Firebase onDisconnect will remove the user from 'users' node
+                // No need to call remove(ref(database, `users/${currentUser.id}`)) here explicitly
+                // as onDisconnect is set up.
+            }
+            clearInterval(heartBeatInterval);
+        });
+
     </script>
 </body>
 </html>
